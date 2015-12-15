@@ -27,17 +27,11 @@ class WCore {
 
     public static function autoload($className) {
         if (isset(self::$_coreClasses[strtolower($className)])) {
-            include(dirname(__FILE__) . self::$_coreClasses[strtolower($className)]);
+            require_once(dirname(__FILE__) . self::$_coreClasses[strtolower($className)]);
         } elseif (isset(self::app()->customclasses[strtolower($className)])) {
 
-            include(self::app()->customclasses[strtolower($className)]);
+            require_once(self::app()->customclasses[strtolower($className)]);
         }
-    }
-
-    public static function registerAutoloader($callback) {
-        spl_autoload_unregister(array('WCore', 'autoload'));
-        spl_autoload_register($callback);
-        spl_autoload_register(array('WCore', 'autoload'));
     }
 
     private static $_coreClasses = array(
