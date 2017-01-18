@@ -3,6 +3,6 @@ class Data extends WModel{
     
     public function insert(){
         $sql = ""; //query
-        $result = $this->CreateQuery($sql);
+        $result = $this->RunQuery($sql);
     }
 }
