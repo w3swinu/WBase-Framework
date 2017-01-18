@@ -17,7 +17,7 @@ class WCore {
     }
 
     public static function app() {
-        self::$app->path = NULL;
+        //unset(self::$app->config);
         return self::$app;
     }
 
@@ -26,11 +26,14 @@ class WCore {
     }
 
     public static function autoload($className) {
-        if (isset(self::$_coreClasses[strtolower($className)])) {
-            require_once(dirname(__FILE__) . self::$_coreClasses[strtolower($className)]);
-        } elseif (isset(self::app()->customclasses[strtolower($className)])) {
-
-            require_once(self::app()->customclasses[strtolower($className)]);
+        $className = strtolower($className);
+        if (isset(self::$_coreClasses[$className])) {
+            require_once(dirname(__FILE__) . self::$_coreClasses[$className]);
+        } elseif (isset(self::app()->customclasses[$className])) {
+            require_once(self::app()->customclasses[$className]);
+            unset(self::app()->customclasses[$className]);
+            if(empty(self::app()->customclasses))
+                unset(self::app()->customclasses);
         }
     }
 
