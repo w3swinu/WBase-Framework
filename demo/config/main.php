@@ -2,15 +2,21 @@
 return array(
     'default' => 'Sample',
     'theme' => 'classic',
+    'error' => 'Sample/Error',
     'db' => array(
-        'server' => 'mysql:host=localhost',
-        'dbname' => 'winu',
+        'server' => 'localhost',
+        'dbname' => 'wbase',
         'username' => 'root',
-        'password' => '1'
+        'password' => ''
     ),
     'import' => array(
         'controllers/*.php',
         'models/*.php',
         'components/*.php'
-    )
+    ),
+    'URLmanager' => [
+        'routes' => [
+            'about' => 'sample/about',
+        ]
+    ]
 );
