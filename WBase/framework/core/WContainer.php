@@ -27,8 +27,8 @@ abstract class WContainer {
 
     public function set($id, $class, array $args = []) {
         if (class_exists($class)) {
-            $this->classes[$id]['class'] = $class;
-            $this->args[$class] = $args;
+            $this->classes[$id] = $class;
+            $this->args[$id] = $args;
         } else {
             throw new WException("Invalid class name when instantiating \"$class\".");
         }
@@ -44,13 +44,14 @@ abstract class WContainer {
     public function get($id, array $params = NULL) {
         $instance = '';
         $dependencies = array();
-        $class = $this->classes[$id]['class'];
-        $args = isset($params) ? $params : $this->args[$class];
+        $class = $this->classes[$id];
+        $args = isset($params) ? $params : $this->args[$id];
         if (class_exists($class)) {
             $reflection = new ReflectionClass($class);
-            if (!empty($args)) {
-                $constructor = $reflection->getConstructor();
-                if ($constructor !== null) {
+            $constructor = $reflection->getConstructor();
+            
+            if ($constructor !== null) {
+                if (!empty($args)) {
 
                     foreach ($constructor->getParameters() as $param) {
                         $dependencies[] = $param;
@@ -62,7 +63,7 @@ abstract class WContainer {
                         throw new WException("Invalid number of parameteres when instantiating \"$class\".");
                     }
                 } else {
-                    throw new WException("Invalid constuctor function when instantiating \"$class\".");
+                    $instance = $reflection->newInstance();
                 }
             } else {
                 $instance = $reflection->newInstanceWithoutConstructor();
