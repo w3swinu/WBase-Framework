@@ -7,6 +7,8 @@ class Sample extends WController {
     public function __construct() {
         $this->store = new Store();
     }
+    
+    public function init(){}
 
     public function Index() {
         WB::$layout = 'main'; // specify only if layout is different, Default "main"
@@ -16,6 +18,10 @@ class Sample extends WController {
     
     public function about(){
         $this->render('about');
+    }
+    
+    public function error(){
+        echo 'Page not found';
     }
 
 }
