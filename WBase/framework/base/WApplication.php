@@ -13,7 +13,8 @@ class WApplication extends WComponent {
         $this->ImportConfig();
         $this->ImportCustomClasses();
         $this->SetDatabase();
-        $this->URLmanager();
+        $this->ThemeURL();
+        $this->RunURL();
     }
 
     private function ImportConfig() {
@@ -21,6 +22,7 @@ class WApplication extends WComponent {
             return FALSE;
         }
         $this->config = require_once $this->path;
+        unset($this->path);
     }
 
     private function ImportAction($files = array(), $path = '') {
@@ -44,71 +46,73 @@ class WApplication extends WComponent {
     private function SetDatabase() {
         if (isset($this->config['db']) && is_array($this->config['db'])) {
             if (isset($this->config['db']['server']) && isset($this->config['db']['dbname']) && isset($this->config['db']['username']) && isset($this->config['db']['password'])) {
-                $host = explode('=', $this->config['db']['server']);
-                $con = mysqli_connect($host[1], $this->config['db']['username'], $this->config['db']['password'], $this->config['db']['dbname']);
+                $this->db = mysqli_connect($this->config['db']['server'], $this->config['db']['username'], $this->config['db']['password'], $this->config['db']['dbname']);
                 if (mysqli_connect_errno()) {
                     die('Not connected : ' . mysql_error());
                 }
-                $this->attach('db', $con);
             }
         }
     }
 
-    private function LoadAction($contr_actn) {
-        $action = '';
-        $path = array();
-        if (isset($contr_actn)) {
-            $path = explode('/', $contr_actn);
-            $action = (isset($path[1]) && (!empty($path[1]))) ? $path[1] : 'index';
-            if (class_exists($path[0])) {
-                $controller = new $path[0]();
-                if (method_exists($controller, $action)) {
-                    $controller->$action();
-                    $controller->init();
-                } else {
-                    throw new WException('Function "' . $action . '" is not defined in the class "' . $path[0] . '".');
-                }
-            } else {
-                throw new WException('Class "' . $path[0] . '" is not defined.');
-            }
-        }
-    }
-
-    private function URLmanager() {
+    private function RunURL() {
+        
+        //  Run index.php?w=controller/action   or
+        //  Run default controller & action
         $path = filter_input(INPUT_GET, 'w', FILTER_DEFAULT);
+
         if (isset($path) && !empty($path)) {
-            self::LoadAction($path);
+            $path = isset($this->config['URLmanager']['routes'][$path]) ? $this->config['URLmanager']['routes'][$path] : $path;
+            $this->RunControllerAction($path);
         } elseif (isset($this->config['default'])) {
-            self::LoadAction($this->config['default']);
+            $this->RunControllerAction($this->config['default']);
         }
     }
 
-    public function baseURL() {
+    private function RunControllerAction($contr_actn) {
+
+        $path = explode('/', $contr_actn);
+        $action = (isset($path[1]) && (!empty($path[1]))) ? $path[1] : 'index';
+        if (class_exists($path[0])) {
+            $this->TriggerController($path[0], $action);
+        } else if (isset($this->config['error'])) {
+            $path = explode('/', $this->config['error']);
+            $this->TriggerController($path[0], $path[1]);
+        } else {
+            throw new WException('Class "' . $path[0] . '" is not defined.');
+        }
+    }
+
+    private function TriggerController($controller, $action) {
+
+        $this->controller = $controller;
+        $controller_obj = new $controller;
+        if (method_exists($controller_obj, $action)) {
+            $this->action = $action;
+            $controller_obj->$action();
+            if (method_exists($controller_obj, 'init')) {
+                $controller_obj->init();
+            } else {
+                throw new WException('Function "init()" is not defined in "' . $controller . '" class');
+            }
+        } else {
+            throw new WException('Function "' . $action . '" is not defined in "' . $controller . '" class');
+        }
+    }
+
+    public function BaseURL() {
         if (isset($_SERVER['HTTP_HOST'])) {
             $base_url = isset($_SERVER['HTTPS']) && strtolower($_SERVER['HTTPS']) !== 'off' ? 'https' : 'http';
             $base_url .= '://' . $_SERVER['HTTP_HOST'];
             $base_url .= str_replace(basename($_SERVER['SCRIPT_NAME']), '', $_SERVER['SCRIPT_NAME']);
         }
-        return $base_url;
+        return $this->rooturl = $base_url;
     }
 
-    public function ThemeURL() {
+    private function ThemeURL() {
         if (isset($this->config['theme']) && !empty($this->config['theme'])) {
-            $base_url = $this->baseURL();
-            return $base_url . 'themes/' . $this->config['theme'];
-        }
-    }
-
-    public function LoadTheme() {
-        if (isset($this->config['theme']) && !empty($this->config['theme'])) {
-            WB::$layout = isset(WB::$layout) ? WB::$layout : 'main';
-            if (file_exists(WB_APPLICATION . '/themes/' . $this->config['theme'] . '/layouts/' . WB::$layout . '.php')) {
-                return WB_APPLICATION . '/themes/' . $this->config['theme'] . '/layouts/' . WB::$layout . '.php';
-            } else {
-                throw new WException('Invalid layout or theme given.');
-            }
+            $this->themeurl = $this->BaseURL() . 'themes/' . $this->config['theme'] . '/';
         } else {
-            throw new WException('Invalid theme given.');
+            throw new WException('Invalid theme name is given.');
         }
     }
 
