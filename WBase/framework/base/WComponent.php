@@ -1,6 +1,6 @@
 <?php
 
-class WComponent {
+abstract class WComponent {
 
     private $data;
 
